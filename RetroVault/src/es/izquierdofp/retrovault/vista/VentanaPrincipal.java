@@ -4,19 +4,175 @@
  */
 package es.izquierdofp.retrovault.vista;
 
+import es.izquierdofp.retrovault.datos.*;
+import es.izquierdofp.retrovault.modelo.*;
+import es.izquierdofp.retrovault.vista.*;
+
 /**
  *
  * @author janet
  */
 public class VentanaPrincipal extends javax.swing.JFrame {
-    
+
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(VentanaPrincipal.class.getName());
+
+    // Añadir ANTES de "public VentanaPrincipal() {"
+    private final JuegoDAO dao = new JuegoDAO();
+    private JuegosTableModel modeloTabla;
 
     /**
      * Creates new form VentanaPrincipal
      */
     public VentanaPrincipal() {
-        initComponents();
+        initComponents(); // generado por NetBeans — no borrar
+        configurarTabla(); // conecta el modelo y el renderer
+        configurarPopup(); // asocia el popup a la tabla
+        cargarDatos(); // carga los juegos de la BD
+        setLocationRelativeTo(null);// centra la ventana en pantalla
+    }
+
+    private void configurarTabla() {
+// Asignamos nuestro modelo personalizado a la tabla
+        modeloTabla = new JuegosTableModel(new java.util.ArrayList<>());
+        tablaJuegos.setModel(modeloTabla);
+// Aplicamos el renderer de colores a TODAS las columnas
+        ConsolaColorRenderer renderer = new ConsolaColorRenderer();
+        for (int i = 0; i < tablaJuegos.getColumnCount(); i++) {
+            tablaJuegos.getColumnModel().getColumn(i).setCellRenderer(renderer);
+        }
+// Anchuras preferidas de cada columna
+        tablaJuegos.getColumnModel().getColumn(0).setPreferredWidth(35);
+        tablaJuegos.getColumnModel().getColumn(1).setPreferredWidth(200);
+        tablaJuegos.getColumnModel().getColumn(2).setPreferredWidth(110);
+        tablaJuegos.getColumnModel().getColumn(3).setPreferredWidth(100);
+        tablaJuegos.getColumnModel().getColumn(4).setPreferredWidth(50);
+        tablaJuegos.getColumnModel().getColumn(5).setPreferredWidth(110);
+        tablaJuegos.getColumnModel().getColumn(6).setPreferredWidth(100);
+// Doble clic en una fila abre el diálogo de edición
+        tablaJuegos.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    editarSeleccionado();
+                }
+            }
+        });
+    }
+
+    private void configurarPopup() {
+// Asociar el popup al JTable
+        tablaJuegos.setComponentPopupMenu(popupTabla);
+// Al hacer clic derecho, seleccionar la fila bajo el cursor
+        tablaJuegos.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mousePressed(java.awt.event.MouseEvent e) {
+                int fila = tablaJuegos.rowAtPoint(e.getPoint());
+                if (fila >= 0) {
+                    tablaJuegos.setRowSelectionInterval(fila, fila);
+                }
+            }
+        });
+
+    }
+// Recarga todos los juegos de la BD y actualiza estadísticas
+
+    private void cargarDatos() {
+        modeloTabla.setJuegos(dao.obtenerTodos());
+        actualizarEstadisticas();
+    }
+
+    private void actualizarEstadisticas() {
+        int total = dao.contarTotal();
+        int comp = dao.contarCompletados();
+        double med = dao.puntuacionMedia();
+        lblTotal.setText(" Total: " + total);
+        lblCompletados.setText(" | Completados: " + comp);
+        lblMedia.setText(" | Media: "
+                + (total == 0 ? "–" : String.format("%.1f ★", med)));
+    
+
+    
+}
+private void editarSeleccionado() {
+        int fila = tablaJuegos.getSelectedRow();
+        if (fila < 0) {
+            return;
+        }
+        Juego j = modeloTabla.getJuego(fila);
+        DialogoJuego dlg = new DialogoJuego(this, j);
+        dlg.setVisible(true);
+        if (dlg.isGuardado()) {
+            dao.actualizar(dlg.getJuego());
+            cargarDatos();
+        }
+    }
+
+    private void eliminarSeleccionado() {
+        int fila = tablaJuegos.getSelectedRow();
+        if (fila < 0) {
+            return;
+        }
+        Juego j = modeloTabla.getJuego(fila);
+        int r = javax.swing.JOptionPane.showConfirmDialog(this,
+                "¿Eliminar \"" + j.getTitulo() + "\" de tu biblioteca?",
+                "Confirmar eliminación", javax.swing.JOptionPane.YES_NO_OPTION,
+                javax.swing.JOptionPane.WARNING_MESSAGE);
+        if (r == javax.swing.JOptionPane.YES_OPTION) {
+            dao.eliminar(j.getId());
+            cargarDatos();
+        }
+    }
+
+    // "+ Añadir" · mniAnyadir · popAnyadir
+    private void btnAnyadirActionPerformed(java.awt.event.ActionEvent evt) {
+        DialogoJuego dlg = new DialogoJuego(this, null); // null = nuevo
+        dlg.setVisible(true);
+        if (dlg.isGuardado()) {
+            dao.insertar(dlg.getJuego());
+            cargarDatos();
+        }
+    }
+// mniEditar · popEditar
+
+    private void mniEditarActionPerformed(java.awt.event.ActionEvent evt) {
+        editarSeleccionado();
+    }
+// mniEliminar · popEliminar
+
+    private void mniEliminarActionPerformed(java.awt.event.ActionEvent evt) {
+        eliminarSeleccionado();
+    }
+// btnFiltrar
+
+    private void btnFiltrarActionPerformed(java.awt.event.ActionEvent evt) {
+        String cons = (String) cmbConsola.getSelectedItem();
+        String est = (String) cmbEstado.getSelectedItem();
+        java.util.List<Juego> lista;
+        if (!"Todas".equals(cons)) {
+            lista = dao.obtenerPorConsola(cons);
+        } else if (!"Todos".equals(est)) {
+            lista = dao.obtenerPorEstado(est);
+        } else {
+            lista = dao.obtenerTodos();
+        }
+        modeloTabla.setJuegos(lista);
+    }
+// btnLimpiar
+
+    private void btnLimpiarActionPerformed(java.awt.event.ActionEvent evt) {
+        cmbConsola.setSelectedIndex(0);
+        cmbEstado.setSelectedIndex(0);
+        cargarDatos();
+    }
+// mniActualizar (F5)
+
+    private void mniActualizarActionPerformed(java.awt.event.ActionEvent evt) {
+        cargarDatos();
+    }
+// mniSalir
+
+    private void mniSalirActionPerformed(java.awt.event.ActionEvent evt) {
+        System.exit(0);
     }
 
     /**
@@ -28,24 +184,140 @@ public class VentanaPrincipal extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jPanel1 = new javax.swing.JPanel();
+        popupTabla = new javax.swing.JPopupMenu();
+        popAnyadir = new javax.swing.JMenuItem();
+        popEditar = new javax.swing.JMenuItem();
+        jSeparator2 = new javax.swing.JPopupMenu.Separator();
+        popEliminar = new javax.swing.JMenuItem();
+        panelFiltros = new javax.swing.JPanel();
+        jLabel1 = new javax.swing.JLabel();
+        cmbConsola = new javax.swing.JComboBox<>();
+        jLabel2 = new javax.swing.JLabel();
+        cmbEstado = new javax.swing.JComboBox<>();
+        btnFiltrar = new javax.swing.JButton();
+        btnLimpiar = new javax.swing.JButton();
+        btnAnyadir = new javax.swing.JButton();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        tablaJuegos = new javax.swing.JTable();
+        panelEstadisticas = new javax.swing.JPanel();
+        lblTotal = new javax.swing.JLabel();
+        lblCompletados = new javax.swing.JLabel();
+        lblMedia = new javax.swing.JLabel();
+        jMenuBar1 = new javax.swing.JMenuBar();
+        jMenu1 = new javax.swing.JMenu();
+        mniSalir = new javax.swing.JMenuItem();
+        mnJuegos = new javax.swing.JMenu();
+        mniAnyadir = new javax.swing.JMenuItem();
+        mniEditar = new javax.swing.JMenuItem();
+        jSeparator1 = new javax.swing.JPopupMenu.Separator();
+        mniEliminar = new javax.swing.JMenuItem();
+        mnVista = new javax.swing.JMenu();
+        mniActualizar = new javax.swing.JMenuItem();
+
+        popAnyadir.setText("Aniadir juego");
+        popupTabla.add(popAnyadir);
+
+        popEditar.setText("Editar juego");
+        popupTabla.add(popEditar);
+        popupTabla.add(jSeparator2);
+
+        popEliminar.setText("Eliminar juego");
+        popupTabla.add(popEliminar);
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("RetroVault — Biblioteca de Videojuegos Retro");
         setMinimumSize(new java.awt.Dimension(900, 600));
 
-        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
-        jPanel1.setLayout(jPanel1Layout);
-        jPanel1Layout.setHorizontalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 400, Short.MAX_VALUE)
-        );
-        jPanel1Layout.setVerticalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 300, Short.MAX_VALUE)
-        );
+        panelFiltros.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
 
-        getContentPane().add(jPanel1, java.awt.BorderLayout.NORTH);
+        jLabel1.setText("Consola");
+        panelFiltros.add(jLabel1);
+
+        cmbConsola.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Todas", "NES", "SNES", "Mega Drive", "Game Boy", "PlayStation", "Nintendo 64", "Game Gear", "Arcade" }));
+        cmbConsola.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        panelFiltros.add(cmbConsola);
+
+        jLabel2.setText("Estado");
+        panelFiltros.add(jLabel2);
+
+        cmbEstado.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Todos", "Pendiente", "Jugando", "Completado", "Abandonado" }));
+        panelFiltros.add(cmbEstado);
+
+        btnFiltrar.setText("Filtrar");
+        panelFiltros.add(btnFiltrar);
+
+        btnLimpiar.setText("Limpiar");
+        panelFiltros.add(btnLimpiar);
+
+        btnAnyadir.setText("Añadir");
+        panelFiltros.add(btnAnyadir);
+
+        getContentPane().add(panelFiltros, java.awt.BorderLayout.PAGE_START);
+
+        tablaJuegos.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
+            },
+            new String [] {
+                "Title 1", "Title 2", "Title 3", "Title 4"
+            }
+        ));
+        tablaJuegos.setGridColor(new java.awt.Color(60, 60, 60));
+        tablaJuegos.setRowHeight(26);
+        tablaJuegos.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        jScrollPane1.setViewportView(tablaJuegos);
+
+        getContentPane().add(jScrollPane1, java.awt.BorderLayout.CENTER);
+
+        panelEstadisticas.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
+
+        lblTotal.setText("Total: 0");
+        panelEstadisticas.add(lblTotal);
+
+        lblCompletados.setText("| Completados: 0");
+        panelEstadisticas.add(lblCompletados);
+
+        lblMedia.setText("| Puntuación media: –");
+        panelEstadisticas.add(lblMedia);
+
+        getContentPane().add(panelEstadisticas, java.awt.BorderLayout.PAGE_END);
+
+        jMenu1.setText("Archivo");
+
+        mniSalir.setText("Salir");
+        jMenu1.add(mniSalir);
+
+        jMenuBar1.add(jMenu1);
+
+        mnJuegos.setText("Juegos");
+
+        mniAnyadir.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_N, java.awt.event.InputEvent.CTRL_DOWN_MASK));
+        mniAnyadir.setText("Aniadir juego...");
+        mnJuegos.add(mniAnyadir);
+
+        mniEditar.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_E, java.awt.event.InputEvent.CTRL_DOWN_MASK));
+        mniEditar.setText("Editar juego...");
+        mnJuegos.add(mniEditar);
+        mnJuegos.add(jSeparator1);
+
+        mniEliminar.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_DELETE, 0));
+        mniEliminar.setText("Eliminar juego");
+        mnJuegos.add(mniEliminar);
+
+        jMenuBar1.add(mnJuegos);
+
+        mnVista.setText("Vista");
+
+        mniActualizar.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F5, 0));
+        mniActualizar.setText("Actualizar");
+        mnVista.add(mniActualizar);
+
+        jMenuBar1.add(mnVista);
+
+        setJMenuBar(jMenuBar1);
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
@@ -76,6 +348,34 @@ public class VentanaPrincipal extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JPanel jPanel1;
+    private javax.swing.JButton btnAnyadir;
+    private javax.swing.JButton btnFiltrar;
+    private javax.swing.JButton btnLimpiar;
+    private javax.swing.JComboBox<String> cmbConsola;
+    private javax.swing.JComboBox<String> cmbEstado;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JMenu jMenu1;
+    private javax.swing.JMenuBar jMenuBar1;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JPopupMenu.Separator jSeparator1;
+    private javax.swing.JPopupMenu.Separator jSeparator2;
+    private javax.swing.JLabel lblCompletados;
+    private javax.swing.JLabel lblMedia;
+    private javax.swing.JLabel lblTotal;
+    private javax.swing.JMenu mnJuegos;
+    private javax.swing.JMenu mnVista;
+    private javax.swing.JMenuItem mniActualizar;
+    private javax.swing.JMenuItem mniAnyadir;
+    private javax.swing.JMenuItem mniEditar;
+    private javax.swing.JMenuItem mniEliminar;
+    private javax.swing.JMenuItem mniSalir;
+    private javax.swing.JPanel panelEstadisticas;
+    private javax.swing.JPanel panelFiltros;
+    private javax.swing.JMenuItem popAnyadir;
+    private javax.swing.JMenuItem popEditar;
+    private javax.swing.JMenuItem popEliminar;
+    private javax.swing.JPopupMenu popupTabla;
+    private javax.swing.JTable tablaJuegos;
     // End of variables declaration//GEN-END:variables
 }
