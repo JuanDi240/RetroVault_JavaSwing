@@ -17,6 +17,7 @@ public class JuegosTableModel extends AbstractTableModel {
 
     /**
      * Reemplaza la lista y avisa a la tabla para que se repinte.
+     * @param juegos
      */
     public void setJuegos(List<Juego> juegos) {
         this.juegos = juegos;
@@ -25,6 +26,8 @@ public class JuegosTableModel extends AbstractTableModel {
 
     /**
      * Permite recuperar el objeto Juego de una fila (útil en listeners).
+     * @param fila
+     * @return 
      */
     public Juego getJuego(int fila) {
         return juegos.get(fila);

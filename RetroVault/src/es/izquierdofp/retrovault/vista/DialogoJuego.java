@@ -66,7 +66,7 @@ public class DialogoJuego extends JDialog {
 // Fila 4 — Puntuación
         cmbPuntuacionDlg = new JComboBox<>(new String[]{
             "Sin puntuar", "★", "★★", "★★★", "★★★★", "★★★★★"});
-pCampos.add(new JLabel("Puntuación:"));
+        pCampos.add(new JLabel("Puntuación:"));
         pCampos.add(cmbPuntuacionDlg);
 // Fila 5 — Estado
         cmbEstadoDlg = new JComboBox<>(new String[]{

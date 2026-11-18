@@ -6,7 +6,6 @@ package es.izquierdofp.retrovault.vista;
 
 import es.izquierdofp.retrovault.datos.*;
 import es.izquierdofp.retrovault.modelo.*;
-import es.izquierdofp.retrovault.vista.*;
 
 /**
  *
@@ -89,11 +88,9 @@ public class VentanaPrincipal extends javax.swing.JFrame {
         lblCompletados.setText(" | Completados: " + comp);
         lblMedia.setText(" | Media: "
                 + (total == 0 ? "–" : String.format("%.1f ★", med)));
-    
+    }
 
-    
-}
-private void editarSeleccionado() {
+    private void editarSeleccionado() {
         int fila = tablaJuegos.getSelectedRow();
         if (fila < 0) {
             return;
@@ -121,58 +118,6 @@ private void editarSeleccionado() {
             dao.eliminar(j.getId());
             cargarDatos();
         }
-    }
-
-    // "+ Añadir" · mniAnyadir · popAnyadir
-    private void btnAnyadirActionPerformed(java.awt.event.ActionEvent evt) {
-        DialogoJuego dlg = new DialogoJuego(this, null); // null = nuevo
-        dlg.setVisible(true);
-        if (dlg.isGuardado()) {
-            dao.insertar(dlg.getJuego());
-            cargarDatos();
-        }
-    }
-// mniEditar · popEditar
-
-    private void mniEditarActionPerformed(java.awt.event.ActionEvent evt) {
-        editarSeleccionado();
-    }
-// mniEliminar · popEliminar
-
-    private void mniEliminarActionPerformed(java.awt.event.ActionEvent evt) {
-        eliminarSeleccionado();
-    }
-// btnFiltrar
-
-    private void btnFiltrarActionPerformed(java.awt.event.ActionEvent evt) {
-        String cons = (String) cmbConsola.getSelectedItem();
-        String est = (String) cmbEstado.getSelectedItem();
-        java.util.List<Juego> lista;
-        if (!"Todas".equals(cons)) {
-            lista = dao.obtenerPorConsola(cons);
-        } else if (!"Todos".equals(est)) {
-            lista = dao.obtenerPorEstado(est);
-        } else {
-            lista = dao.obtenerTodos();
-        }
-        modeloTabla.setJuegos(lista);
-    }
-// btnLimpiar
-
-    private void btnLimpiarActionPerformed(java.awt.event.ActionEvent evt) {
-        cmbConsola.setSelectedIndex(0);
-        cmbEstado.setSelectedIndex(0);
-        cargarDatos();
-    }
-// mniActualizar (F5)
-
-    private void mniActualizarActionPerformed(java.awt.event.ActionEvent evt) {
-        cargarDatos();
-    }
-// mniSalir
-
-    private void mniSalirActionPerformed(java.awt.event.ActionEvent evt) {
-        System.exit(0);
     }
 
     /**
@@ -215,13 +160,16 @@ private void editarSeleccionado() {
         mniActualizar = new javax.swing.JMenuItem();
 
         popAnyadir.setText("Aniadir juego");
+        popAnyadir.addActionListener(this::popAnyadirActionPerformed);
         popupTabla.add(popAnyadir);
 
         popEditar.setText("Editar juego");
+        popEditar.addActionListener(this::popEditarActionPerformed);
         popupTabla.add(popEditar);
         popupTabla.add(jSeparator2);
 
         popEliminar.setText("Eliminar juego");
+        popEliminar.addActionListener(this::popEliminarActionPerformed);
         popupTabla.add(popEliminar);
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -244,12 +192,15 @@ private void editarSeleccionado() {
         panelFiltros.add(cmbEstado);
 
         btnFiltrar.setText("Filtrar");
+        btnFiltrar.addActionListener(this::btnFiltrarActionPerformed);
         panelFiltros.add(btnFiltrar);
 
         btnLimpiar.setText("Limpiar");
+        btnLimpiar.addActionListener(this::btnLimpiarActionPerformed);
         panelFiltros.add(btnLimpiar);
 
         btnAnyadir.setText("Añadir");
+        btnAnyadir.addActionListener(this::btnAnyadirActionPerformed);
         panelFiltros.add(btnAnyadir);
 
         getContentPane().add(panelFiltros, java.awt.BorderLayout.PAGE_START);
@@ -288,6 +239,7 @@ private void editarSeleccionado() {
         jMenu1.setText("Archivo");
 
         mniSalir.setText("Salir");
+        mniSalir.addActionListener(this::mniSalirActionPerformed);
         jMenu1.add(mniSalir);
 
         jMenuBar1.add(jMenu1);
@@ -296,15 +248,18 @@ private void editarSeleccionado() {
 
         mniAnyadir.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_N, java.awt.event.InputEvent.CTRL_DOWN_MASK));
         mniAnyadir.setText("Aniadir juego...");
+        mniAnyadir.addActionListener(this::mniAnyadirActionPerformed);
         mnJuegos.add(mniAnyadir);
 
         mniEditar.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_E, java.awt.event.InputEvent.CTRL_DOWN_MASK));
         mniEditar.setText("Editar juego...");
+        mniEditar.addActionListener(this::mniEditarActionPerformed);
         mnJuegos.add(mniEditar);
         mnJuegos.add(jSeparator1);
 
         mniEliminar.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_DELETE, 0));
         mniEliminar.setText("Eliminar juego");
+        mniEliminar.addActionListener(this::mniEliminarActionPerformed);
         mnJuegos.add(mniEliminar);
 
         jMenuBar1.add(mnJuegos);
@@ -313,6 +268,7 @@ private void editarSeleccionado() {
 
         mniActualizar.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F5, 0));
         mniActualizar.setText("Actualizar");
+        mniActualizar.addActionListener(this::mniActualizarActionPerformed);
         mnVista.add(mniActualizar);
 
         jMenuBar1.add(mnVista);
@@ -321,6 +277,67 @@ private void editarSeleccionado() {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+    private void btnAnyadirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAnyadirActionPerformed
+        DialogoJuego dlg = new DialogoJuego(this, null); // null = nuevo
+        dlg.setVisible(true);
+        if (dlg.isGuardado()) {
+            dao.insertar(dlg.getJuego());
+            cargarDatos();
+        }
+    }//GEN-LAST:event_btnAnyadirActionPerformed
+
+    private void mniAnyadirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mniAnyadirActionPerformed
+        btnAnyadirActionPerformed(evt);
+    }//GEN-LAST:event_mniAnyadirActionPerformed
+
+    private void mniEditarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mniEditarActionPerformed
+        editarSeleccionado();
+    }//GEN-LAST:event_mniEditarActionPerformed
+
+    private void mniEliminarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mniEliminarActionPerformed
+        eliminarSeleccionado();
+    }//GEN-LAST:event_mniEliminarActionPerformed
+
+    private void btnFiltrarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFiltrarActionPerformed
+        String cons = (String) cmbConsola.getSelectedItem();
+        String est = (String) cmbEstado.getSelectedItem();
+        java.util.List<Juego> lista;
+        if (!"Todas".equals(cons)) {
+            lista = dao.obtenerPorConsola(cons);
+        } else if (!"Todos".equals(est)) {
+            lista = dao.obtenerPorEstado(est);
+        } else {
+            lista = dao.obtenerTodos();
+        }
+        modeloTabla.setJuegos(lista);
+    }//GEN-LAST:event_btnFiltrarActionPerformed
+
+    private void btnLimpiarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLimpiarActionPerformed
+        cmbConsola.setSelectedIndex(0);
+        cmbEstado.setSelectedIndex(0);
+        cargarDatos();
+    }//GEN-LAST:event_btnLimpiarActionPerformed
+
+    private void mniActualizarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mniActualizarActionPerformed
+        cargarDatos();
+    }//GEN-LAST:event_mniActualizarActionPerformed
+
+    private void mniSalirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mniSalirActionPerformed
+        System.exit(0);
+    }//GEN-LAST:event_mniSalirActionPerformed
+
+    private void popAnyadirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_popAnyadirActionPerformed
+        btnAnyadirActionPerformed(evt);
+    }//GEN-LAST:event_popAnyadirActionPerformed
+
+    private void popEditarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_popEditarActionPerformed
+        editarSeleccionado();
+    }//GEN-LAST:event_popEditarActionPerformed
+
+    private void popEliminarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_popEliminarActionPerformed
+        eliminarSeleccionado();
+    }//GEN-LAST:event_popEliminarActionPerformed
 
     /**
      * @param args the command line arguments
